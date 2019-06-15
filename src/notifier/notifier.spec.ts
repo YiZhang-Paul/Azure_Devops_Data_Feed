@@ -29,4 +29,31 @@ context('notifier unit test', () => {
             expect(notifier.subscribed).to.equal(subscribed + 1);
         });
     });
+
+    describe('unsubscribe()', () => {
+
+        it('should throw error when no subscriber exist', () => {
+
+            expect(notifier.subscribed).to.equal(0);
+            expect(() => notifier.unsubscribe('random_id')).to.throw();
+        });
+
+        it('should throw error when no subscriber found with given id', () => {
+
+            const id = notifier.subscribe({ callbackUrl: '' });
+            const otherId = `${id.slice(0, -1)}${id[id.length - 1] === 'a' ? 'b' : 'a'}`;
+
+            expect(id).to.not.equal(otherId);
+            expect(() => notifier.unsubscribe(otherId)).to.throw();
+        });
+
+        it('should return true when unsubscribed successfully', () => {
+
+            const id = notifier.subscribe({ callbackUrl: '' });
+            const subscribed = notifier.subscribed;
+
+            expect(notifier.unsubscribe(id)).to.be.true;
+            expect(notifier.subscribed).to.equal(subscribed - 1);
+        });
+    });
 });

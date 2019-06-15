@@ -18,4 +18,14 @@ export class Notifier {
 
         return id;
     }
+
+    public unsubscribe(id: string): boolean {
+
+        if (!this._subscribers.has(id)) {
+
+            throw new Error('No subscription found.');
+        }
+
+        return this._subscribers.delete(id);
+    }
 }
