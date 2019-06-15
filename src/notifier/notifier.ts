@@ -1,10 +1,14 @@
 import { Guid } from 'guid-typescript';
 
+import { IHttpClient } from '../http/http-client.interface';
+
 import { ISubscriberInfo } from './subscriber-info.interface';
 
 export class Notifier {
 
     private _subscribers = new Map<string, ISubscriberInfo>();
+
+    constructor(private _http: IHttpClient) { }
 
     get subscribed(): number {
 
@@ -27,5 +31,22 @@ export class Notifier {
         }
 
         return this._subscribers.delete(id);
+    }
+
+    public async notify(payload: any): Promise<void> {
+
+        const subscribers = Array.from(this._subscribers);
+
+        await Promise.all(subscribers.map(async _ => {
+
+            try {
+
+                return await this._http.post(_[1].callbackUrl, payload);
+            }
+            catch (error) {
+
+                console.log(error);
+            }
+        }));
     }
 }

@@ -1,14 +1,19 @@
 import { expect } from 'chai';
+import { assert as sinonExpect, match } from 'sinon';
+
+import { stubHttpClient } from '../tests/stubs/http-client.stub';
 
 import { Notifier } from './notifier';
 
 context('notifier unit test', () => {
 
     let notifier: Notifier;
+    let httpClientStub: any;
 
     beforeEach('test setup', () => {
 
-        notifier = new Notifier();
+        httpClientStub = stubHttpClient();
+        notifier = new Notifier(httpClientStub);
     });
 
     describe('subscribe()', () => {
@@ -54,6 +59,38 @@ context('notifier unit test', () => {
 
             expect(notifier.unsubscribe(id)).to.be.true;
             expect(notifier.subscribed).to.equal(subscribed - 1);
+        });
+    });
+
+    describe('notify()', () => {
+
+        beforeEach('notify() test setup', () => {
+
+            notifier.subscribe({ callbackUrl: 'url_1' });
+            notifier.subscribe({ callbackUrl: 'url_2' });
+            notifier.subscribe({ callbackUrl: 'url_3' });
+        });
+
+        it('should notify all subscribers with the payload', async () => {
+
+            const subscribed = notifier.subscribed;
+            const payload = { data: 'random_data' };
+            await notifier.notify(payload);
+
+            expect(subscribed).to.be.greaterThan(0);
+            sinonExpect.callCount(httpClientStub.post, subscribed);
+            sinonExpect.calledWith(httpClientStub.post, match(/url_\d/), payload);
+        });
+
+        it('should notify all subscribers despite errors', async () => {
+
+            httpClientStub.post.throws(new Error());
+
+            const subscribed = notifier.subscribed;
+            await notifier.notify({});
+
+            expect(subscribed).to.be.greaterThan(0);
+            sinonExpect.callCount(httpClientStub.post, subscribed);
         });
     });
 });
