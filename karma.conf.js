@@ -4,7 +4,7 @@ const entry = './src/specs.ts';
 
 process.env.CHROME_BIN = puppeteer.executablePath();
 
-module.exports = function(config) {
+module.exports = function (config) {
 
     config.set({
 
@@ -18,8 +18,7 @@ module.exports = function(config) {
             noInfo: true,
             stats: { chunks: false }
         },
-        autoWatch: false,
-        singleRun: false,
+        autoWatch: true,
         browsers: ['ChromeHeadless'],
         frameworks: ['mocha', 'chai', 'sinon'],
         reporters: ['mocha'],
