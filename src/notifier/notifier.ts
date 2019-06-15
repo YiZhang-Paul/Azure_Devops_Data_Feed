@@ -1,5 +1,6 @@
 import { Guid } from 'guid-typescript';
 
+import Logger from '../logger';
 import { IHttpClient } from '../http/http-client.interface';
 
 import { ISubscriberInfo } from './subscriber-info.interface';
@@ -45,7 +46,7 @@ export class Notifier {
             }
             catch (error) {
 
-                console.log(error);
+                Logger.log(error);
             }
         }));
     }
