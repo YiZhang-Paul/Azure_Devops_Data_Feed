@@ -1,11 +1,16 @@
-import { stub } from 'sinon';
+import { SinonStubbedInstance, stub } from 'sinon';
 
 import { IHttpClient } from '../../http/http-client.interface';
 
-export function stubHttpClient(): IHttpClient {
+export function stubHttpClient(): SinonStubbedInstance<IHttpClient> {
 
-    const stubbed = {} as IHttpClient;
-    stubbed.post = stub().resolves({});
+    const stubbed = stub({
+
+        post: () => Promise.resolve({})
+
+    } as IHttpClient);
+
+    stubbed.post.resolves({});
 
     return stubbed;
 }

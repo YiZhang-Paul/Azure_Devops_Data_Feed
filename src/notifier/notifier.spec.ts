@@ -1,14 +1,15 @@
 import { expect } from 'chai';
-import { assert as sinonExpect, match } from 'sinon';
+import { assert as sinonExpect, match, SinonStubbedInstance } from 'sinon';
 
 import { stubHttpClient } from '../tests/stubs/http-client.stub';
+import { IHttpClient } from '../http/http-client.interface';
 
 import { Notifier } from './notifier';
 
 context('notifier unit test', () => {
 
     let notifier: Notifier;
-    let httpClientStub: any;
+    let httpClientStub: SinonStubbedInstance<IHttpClient>;
 
     beforeEach('test setup', () => {
 
@@ -84,7 +85,7 @@ context('notifier unit test', () => {
 
         it('should notify all subscribers despite errors', async () => {
 
-            httpClientStub.post.throws(new Error());
+            httpClientStub.post.rejects(new Error());
 
             const subscribed = notifier.subscribed;
             await notifier.notify({});
