@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { assert as sinonExpect, match, SinonStubbedInstance } from 'sinon';
 
+import Utilities from '../tests/test-utilities';
 import { stubHttpClient } from '../tests/stubs/http-client.stub';
 import { IHttpClient } from '../http/http-client.interface';
 
@@ -23,8 +24,7 @@ context('notifier unit test', () => {
 
             const guid = notifier.subscribe({ callbackUrl: '' });
 
-            expect(/[A-Z|_]/.test(guid)).to.be.false;
-            expect(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.test(guid)).to.be.true;
+            expect(Utilities.isValidGuid(guid)).to.be.true;
         });
 
         it('should register new subscriber', () => {
