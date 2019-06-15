@@ -1,14 +1,14 @@
+const nodeExternals = require('webpack-node-externals');
 const path = require('path');
 
 module.exports = {
 
     mode: 'none',
     target: 'node',
-    entry: {
-        server: path.join(__dirname, '../src/server.ts')
-    },
+    externals: [nodeExternals()],
+    entry: path.join(__dirname, '../src/server.ts'),
     output: {
-        filename: '[name].bundle.js',
+        filename: 'server.bundle.js',
         path: path.join(__dirname, '../dist/')
     },
     resolve: {
