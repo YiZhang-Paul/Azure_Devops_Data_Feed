@@ -6,7 +6,7 @@ import { IBuildSummary } from '../build-summary.interface';
 export interface ICiStatusChecker {
 
     builds: Build[];
-    readonly stats: { pull: IBuildSummary; merge: IBuildSummary };
+    readonly summary: { pull: IBuildSummary; merge: IBuildSummary };
     brokenCheck(): IPipelineStatus<{ total: number; time: number }> | null;
     buildingCheck(): IPipelineStatus<{ total: number; time: number }> | null;
     builtCheck(): IPipelineStatus<{ branch: string }> | null;
