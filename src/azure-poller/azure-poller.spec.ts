@@ -9,6 +9,7 @@ import { stubCiStatusChecker } from '../tests/stubs/ci-status-checker.stub';
 import { stubCdStatusChecker } from '../tests/stubs/cd-status-checker.stub';
 import { ICiStatusChecker } from '../status-checker/ci/ci-status-checker.interface';
 import { ICdStatusChecker } from '../status-checker/cd/cd-status-checker.interface';
+import { IPipelineStatus } from '../status-checker/pipeline-status.interface';
 
 import { IAzureWebApiFactory } from './azure-web-api-factory.interface';
 import { AzurePoller } from './azure-poller';
@@ -91,11 +92,34 @@ context('azure poller unit test', () => {
         it('should return empty array when exception thrown', async () => {
 
             buildApiStub.getBuilds.rejects(new Error());
-
             const result = await poller.poll(project);
 
             expect(Array.isArray(result)).to.be.true;
             expect(result).to.be.empty;
+        });
+
+        it('should return highest priority status checks found', async () => {
+
+            const buildingStatus = { event: 'ci', mode: 'building' } as IPipelineStatus;
+            const failedStatus = { event: 'ci', mode: 'build-failed' } as IPipelineStatus;
+            const builtStatus = { event: 'ci', mode: 'built' } as IPipelineStatus;
+            const pendingStatus = { event: 'cd', mode: 'pending' } as IPipelineStatus;
+            ciCheckerStub.buildingCheck.returns(buildingStatus);
+            ciCheckerStub.failedCheck.returns(failedStatus);
+            ciCheckerStub.builtCheck.returns(builtStatus);
+            cdCheckerStub.pendingCheck.returns(pendingStatus);
+            const result = await poller.poll(project);
+            // pending has higher priority than building, failed has higher priority than built
+            expect(result).to.deep.equal([pendingStatus, failedStatus]);
+        });
+
+        it('should ignore null status checks', async () => {
+
+            const status = { event: 'cd', mode: 'deploying' } as IPipelineStatus;
+            cdCheckerStub.deploySuccessCheck.returns(status);
+            const result = await poller.poll(project);
+
+            expect(result).to.deep.equal([status]);
         });
     });
 });
