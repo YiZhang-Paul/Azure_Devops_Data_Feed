@@ -33,6 +33,30 @@ export class CdStatusChecker implements ICdStatusChecker {
 
     public deployBrokenCheck(): IPipelineStatus<{ branch: string }> | null {
 
+        const skip = new Set<number>();
+        const deploys = this.getSucceededOrFailedDeploys();
+
+        for (const deploy of this.sortByCompletionTime(deploys)) {
+
+            if (!deploy.releaseDefinition || !deploy.releaseDefinition.id) {
+
+                continue;
+            }
+
+            const id = deploy.releaseDefinition.id;
+
+            if (this.isSucceeded(deploy)) {
+
+                skip.add(id);
+            }
+            else if (!skip.has(id)) {
+
+                const branch = this.getReleaseName(deploy);
+
+                return { event: 'cd', mode: 'deploy-broken', data: { branch } };
+            }
+        }
+
         return null;
     }
 
@@ -123,6 +147,11 @@ export class CdStatusChecker implements ICdStatusChecker {
     private getCompletedDeploys(): Deployment[] {
 
         return this.deploys.filter(_ => this.isPendingOrCompleted(_));
+    }
+
+    private getSucceededOrFailedDeploys(): Deployment[] {
+
+        return this.deploys.filter(_ => this.isSucceededOrFailed(_));
     }
 
     private getReleaseName(deploy: Deployment): string {

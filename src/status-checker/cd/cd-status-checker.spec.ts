@@ -44,6 +44,64 @@ context('cd status checker unit test', () => {
         });
     });
 
+    describe('deployBrokenCheck()', () => {
+
+        beforeEach('deployBrokenCheck() test setup', () => {
+
+            const definitionA = { id: 5, name: 'PROD' };
+            const definitionB = { id: 6, name: 'DEV' };
+            const definitionC = { id: 7, name: 'MASTER' };
+            const definitionD = { id: 8, name: 'OTHER' };
+            // deploys 1 - 5 belong to pipeline A
+            checker.deploys.slice(0, 5).forEach(_ => _.releaseDefinition = definitionA);
+            // deploys 6 - 10 belong to pipeline B
+            checker.deploys.slice(5, 10).forEach(_ => _.releaseDefinition = definitionB);
+            // deploys 11 - 15 belong to pipeline C
+            checker.deploys.slice(10, 15).forEach(_ => _.releaseDefinition = definitionC);
+            // deploys 16 - 20 belong to pipeline D
+            checker.deploys.slice(15).forEach(_ => _.releaseDefinition = definitionD);
+        });
+
+        it('should return null when no pipeline is broken', () => {
+            // all pipelines are still considered passing since their most recent completed deploys are all passed
+            checker.deploys[1].deploymentStatus = DeploymentStatus.Failed;
+            checker.deploys[6].deploymentStatus = DeploymentStatus.Failed;
+            checker.deploys[11].deploymentStatus = DeploymentStatus.Failed;
+
+            expect(checker.deployBrokenCheck()).to.be.null;
+        });
+
+        it('should return correct information of any one of the broken deployments', () => {
+            // pipeline A and C are broken since their most recent completed deploy is broken
+            const minutes = -17;
+            checker.deploys[0].deploymentStatus = DeploymentStatus.PartiallySucceeded;
+            // deploy 1 was the most recent one to break
+            checker.deploys[0].completedOn = Utilities.addMinutes(new Date(), minutes + 2);
+            checker.deploys[1].deploymentStatus = DeploymentStatus.Failed;
+            checker.deploys[1].completedOn = Utilities.addMinutes(new Date(), minutes);
+            checker.deploys[10].deploymentStatus = DeploymentStatus.Failed;
+            checker.deploys[10].completedOn = Utilities.addMinutes(new Date(), minutes + 1);
+            const result = checker.deployBrokenCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('cd');
+            expect(result.mode).to.equal('deploy-broken');
+            // deploy 1 belongs to pipeline A
+            expect(result.data.branch).to.equal('PROD');
+        });
+
+        it('should ignore deploys that are neither passed nor failed', () => {
+            // pipeline B is broken since its most recent passed/failed deploy is broken
+            checker.deploys[5].deploymentStatus = DeploymentStatus.NotDeployed;
+            checker.deploys[6].deploymentStatus = DeploymentStatus.Undefined;
+            checker.deploys[7].deploymentStatus = DeploymentStatus.Failed;
+            const result = checker.deployBrokenCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.data.branch).to.equal('DEV');
+        });
+    });
+
     describe('deployingCheck()', () => {
 
         it('should return null when no ongoing deployments found', () => {
