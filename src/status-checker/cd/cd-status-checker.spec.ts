@@ -44,6 +44,30 @@ context('cd status checker unit test', () => {
         });
     });
 
+    describe('deployingCheck()', () => {
+
+        it('should return null when no ongoing deployments found', () => {
+
+            const result = checker.deployingCheck();
+
+            expect(result).to.be.null;
+        });
+
+        it('should return correct pipeline\'s status when ongoing deployment found', () => {
+
+            checker.deploys[6] = stubAzureDeploy(true);
+            const name = 'DEV';
+            const deploy = checker.deploys[6];
+            deploy.releaseDefinition = { name };
+            const result = checker.deployingCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('cd');
+            expect(result.mode).to.equal('deploying');
+            expect(result.data.branch).to.equal(name);
+        });
+    });
+
     describe('deployFailureCheck()', () => {
 
         it('should return null when no deployment failed within last 5 minutes', () => {

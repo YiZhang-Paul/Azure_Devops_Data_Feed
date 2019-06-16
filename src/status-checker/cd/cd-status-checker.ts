@@ -38,7 +38,16 @@ export class CdStatusChecker implements ICdStatusChecker {
 
     public deployingCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        const deploy = this.deploys.find(_ => this.isDeploying(_));
+
+        if (!deploy) {
+
+            return null;
+        }
+
+        const branch = this.getReleaseName(deploy);
+
+        return { event: 'cd', mode: 'deploying', data: { branch } };
     }
 
     public pendingCheck(): IPipelineStatus<{ branch: string }> | null {
@@ -79,10 +88,10 @@ export class CdStatusChecker implements ICdStatusChecker {
             return null;
         }
 
-        const branch = deploy.releaseDefinition ? deploy.releaseDefinition.name : '';
+        const branch = this.getReleaseName(deploy);
         this._reported.add(this.getKey(deploy));
 
-        return { event: 'cd', mode, data: { branch: branch || '' } };
+        return { event: 'cd', mode, data: { branch } };
     }
 
     private canReport(deploy: Deployment, threshold = 300000): boolean {
@@ -105,6 +114,16 @@ export class CdStatusChecker implements ICdStatusChecker {
     private getCompletedDeploys(): Deployment[] {
 
         return this.deploys.filter(_ => this.isPendingOrCompleted(_));
+    }
+
+    private getReleaseName(deploy: Deployment): string {
+
+        if (!deploy.releaseDefinition || !deploy.releaseDefinition.name) {
+
+            return '';
+        }
+
+        return deploy.releaseDefinition.name;
     }
 
     private getKey(deploy: Deployment): string {
