@@ -10,6 +10,11 @@ export class TestUtilities {
         return /\w{8}-\w{4}-\w{4}-\w{4}-\w{8}/.test(guid);
     }
 
+    public fillArray<T>(total: number, factory: Function, ...args: any[]): T[] {
+
+        return new Array(total).fill(0).map(_ => factory(...args));
+    }
+
     public getDate(hour = 0, minute = 0, second = 0): Date {
 
         const time = new Date().setHours(hour, minute, second, 0);

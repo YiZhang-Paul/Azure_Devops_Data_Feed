@@ -14,7 +14,7 @@ context('ci status checker unit test', () => {
     beforeEach('test setup', () => {
 
         checker = new CiStatusChecker();
-        checker.builds = new Array(20).fill(0).map(_ => stubAzureBuild());
+        checker.builds = Utilities.fillArray(20, stubAzureBuild);
     });
 
     describe('summary', () => {

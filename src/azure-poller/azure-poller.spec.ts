@@ -46,8 +46,8 @@ context('azure poller unit test', () => {
 
         beforeEach('poll() test setup', () => {
 
-            builds = new Array(140).fill(0).map(_ => stubAzureBuild());
-            deploys = new Array(70).fill(0).map(_ => stubAzureDeploy());
+            builds = Utilities.fillArray(140, stubAzureBuild);
+            deploys = Utilities.fillArray(70, stubAzureDeploy);
             buildApiStub.getBuilds.resolves(builds);
             releaseApiStub.getDeployments.resolves(deploys);
         });

@@ -14,7 +14,7 @@ context('cd status checker unit test', () => {
     beforeEach('test setup', () => {
 
         checker = new CdStatusChecker();
-        checker.deploys = new Array(20).fill(0).map(_ => stubAzureDeploy());
+        checker.deploys = Utilities.fillArray(20, stubAzureDeploy);
     });
 
     describe('summary', () => {
