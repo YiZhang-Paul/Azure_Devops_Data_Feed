@@ -83,4 +83,43 @@ context('ci status checker unit test', () => {
             expect(Math.abs(result.data.time - elapsedTime)).to.be.lessThan(20);
         });
     });
+
+    describe('builtCheck()', () => {
+
+        it('should return null when no build passed within last 1 minute', () => {
+
+            const build = checker.builds[0];
+            build.finishTime = Utilities.addMilliseconds(new Date(), -60005);
+            const result = checker.builtCheck();
+
+            expect(result).to.be.null;
+        });
+
+        it('should send notification for build passed within last 1 minute', () => {
+
+            const branch = 'develop';
+            const build = checker.builds[0];
+            build.sourceBranch = `refs/heads/${branch}`;
+            build.finishTime = Utilities.addMilliseconds(new Date(), -59995);
+            const result = checker.builtCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('ci');
+            expect(result.mode).to.equal('built');
+            expect(result.data.branch).to.equal(branch.toUpperCase());
+        });
+
+        it('should only send one notification for every passed build', () => {
+
+            const build = checker.builds[0];
+            build.finishTime = Utilities.addMilliseconds(new Date(), -59995);
+
+            expect(checker.builtCheck()).to.be.not.null;
+
+            for (let i = 0; i < 10; ++i) {
+
+                expect(checker.builtCheck()).to.be.null;
+            }
+        });
+    });
 });

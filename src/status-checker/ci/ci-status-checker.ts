@@ -9,6 +9,8 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public builds: Build[] = [];
 
+    private _reported = new Set<string>();
+
     public get summary(): { pull: IBuildSummary; merge: IBuildSummary } {
 
         const pull = { pass: [], fail: [], ongoing: [], other: [] } as IBuildSummary;
@@ -55,7 +57,17 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public builtCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        const build = this.getLatestCompletedBuild();
+
+        if (!build || !this.canReport(build) || !this.isPassedOrFailed(build)) {
+
+            return null;
+        }
+
+        const branch = this.getSourceBranch(build).toUpperCase();
+        this._reported.add(this.getKey(build));
+
+        return { event: 'ci', mode: 'built', data: { branch } };
     }
 
     public failedCheck(): IPipelineStatus<{ branch: string }> | null {
@@ -63,9 +75,59 @@ export class CiStatusChecker implements ICiStatusChecker {
         return null;
     }
 
-    private elapsedSince(date = new Date()): number {
+    private canReport(build: Build, threshold = 60000): boolean {
 
-        return Date.now() - date.getTime();
+        if (this._reported.has(this.getKey(build))) {
+
+            return false;
+        }
+
+        return this.elapsedSince(build.finishTime) <= threshold;
+    }
+
+    private getKey(build: Build): string {
+
+        const name = build.definition ? build.definition.name : '';
+
+        return `${name}|${build.id}`;
+    }
+
+    private getLatestCompletedBuild(): Build | null {
+
+        const builds = this.getCompletedBuilds();
+
+        return builds.length ? this.sortByCompletionTime(builds)[0] : null;
+    }
+
+    private getCompletedBuilds(): Build[] {
+
+        return this.builds.filter(_ => this.isCompleted(_));
+    }
+
+    private getSourceBranch(build: Build): string {
+
+        if (this.isPullRequestValidation(build)) {
+
+            return build.triggerInfo ? build.triggerInfo['pr.sourceBranch'] : '';
+        }
+
+        const paths = (build.sourceBranch || '').split('/');
+
+        return paths[paths.length - 1];
+    }
+
+    private sortByCompletionTime(builds: Build[], ascending = false): Build[] {
+
+        const sorted = builds.slice().sort((a, b) => {
+
+            const now = Date.now();
+            const finishTimeA = a.finishTime ? a.finishTime.getTime() : now;
+            const finishTimeB = b.finishTime ? b.finishTime.getTime() : now;
+
+            return finishTimeB - finishTimeA;
+        });
+
+        return ascending ? sorted.reverse() : sorted;
     }
 
     private sortByStartTime(builds: Build[], ascending = false): Build[] {
@@ -80,6 +142,11 @@ export class CiStatusChecker implements ICiStatusChecker {
         });
 
         return ascending ? sorted.reverse() : sorted;
+    }
+
+    private elapsedSince(date = new Date()): number {
+
+        return Date.now() - date.getTime();
     }
 
     private isPullRequestValidation(build: Build): boolean {
@@ -105,6 +172,11 @@ export class CiStatusChecker implements ICiStatusChecker {
         }
 
         return build.result === BuildResult.PartiallySucceeded;
+    }
+
+    private isCompleted(build: Build): boolean {
+
+        return build.status === BuildStatus.Completed;
     }
 
     private isBuilding(build: Build): boolean {

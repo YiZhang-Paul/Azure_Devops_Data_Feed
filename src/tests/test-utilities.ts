@@ -23,6 +23,13 @@ export class TestUtilities {
 
         return new Date(time);
     }
+
+    public addMilliseconds(date: Date, milliseconds: number): Date {
+
+        const time = date.setMilliseconds(date.getMilliseconds() + milliseconds);
+
+        return new Date(time);
+    }
 }
 
 export default new TestUtilities();
