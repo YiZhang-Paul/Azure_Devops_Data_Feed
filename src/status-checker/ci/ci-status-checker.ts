@@ -72,7 +72,17 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public failedCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        const build = this.getLatestCompletedBuild();
+
+        if (!build || !this.canReport(build) || !this.isPassedOrFailed(build)) {
+
+            return null;
+        }
+
+        const branch = this.getSourceBranch(build).toUpperCase();
+        this._reported.add(this.getKey(build));
+
+        return { event: 'ci', mode: 'build-failed', data: { branch } };
     }
 
     private canReport(build: Build, threshold = 60000): boolean {

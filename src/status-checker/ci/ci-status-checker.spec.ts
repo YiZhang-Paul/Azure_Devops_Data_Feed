@@ -96,7 +96,7 @@ context('ci status checker unit test', () => {
         });
 
         it('should send notification for build passed within last 1 minute', () => {
-
+            // the build is continuous integration build
             const branch = 'develop';
             const build = checker.builds[0];
             build.sourceBranch = `refs/heads/${branch}`;
@@ -119,6 +119,49 @@ context('ci status checker unit test', () => {
             for (let i = 0; i < 10; ++i) {
 
                 expect(checker.builtCheck()).to.be.null;
+            }
+        });
+    });
+
+    describe('failedCheck()', () => {
+
+        it('should return null when no build failed within last 1 minute', () => {
+
+            const build = checker.builds[0];
+            build.result = BuildResult.Failed;
+            build.finishTime = Utilities.addMilliseconds(new Date(), -60005);
+            const result = checker.failedCheck();
+
+            expect(result).to.be.null;
+        });
+
+        it('should send notification for build failed within last 1 minute', () => {
+            // the build is pull request validation
+            checker.builds[0] = stubAzureBuild(false, true);
+            const branch = 'random_branch';
+            const build = checker.builds[0];
+            build.result = BuildResult.Failed;
+            build.triggerInfo = { 'pr.sourceBranch': branch };
+            build.finishTime = Utilities.addMilliseconds(new Date(), -59995);
+            const result = checker.failedCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('ci');
+            expect(result.mode).to.equal('build-failed');
+            expect(result.data.branch).to.equal(branch.toUpperCase());
+        });
+
+        it('should only send one notification for every failed build', () => {
+
+            const build = checker.builds[0];
+            build.result = BuildResult.Failed;
+            build.finishTime = Utilities.addMilliseconds(new Date(), -59995);
+
+            expect(checker.failedCheck()).to.be.not.null;
+
+            for (let i = 0; i < 10; ++i) {
+
+                expect(checker.failedCheck()).to.be.null;
             }
         });
     });

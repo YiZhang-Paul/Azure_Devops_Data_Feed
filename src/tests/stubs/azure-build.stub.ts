@@ -17,5 +17,10 @@ export function stubAzureBuild(ongoing = false, isPullRequest = false): SinonStu
         stubbed.finishTime = Utilities.getDate(hour, minute);
     }
 
+    if (isPullRequest) {
+
+        stubbed.triggerInfo = { 'pr.sourceBranch': 'random_branch' };
+    }
+
     return stubbed;
 }
