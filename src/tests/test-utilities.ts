@@ -17,6 +17,13 @@ export class TestUtilities {
         return new Date(time);
     }
 
+    public addDays(date: Date, days: number): Date {
+
+        const time = date.setDate(date.getDate() + days);
+
+        return new Date(time);
+    }
+
     public addMinutes(date: Date, minutes: number): Date {
 
         const time = date.setMinutes(date.getMinutes() + minutes);
