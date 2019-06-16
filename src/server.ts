@@ -1,6 +1,11 @@
-import * as express from 'express';
 import { get } from 'config';
+import * as express from 'express';
+import { setTimeout } from 'timers';
 
+import { AzureWebApiFactory } from './azure-poller/azure-web-api-factory';
+import { CiStatusChecker } from './status-checker/ci/ci-status-checker';
+import { CdStatusChecker } from './status-checker/cd/cd-status-checker';
+import { AzurePoller } from './azure-poller/azure-poller';
 import { HttpClient } from './http/http-client';
 import { Notifier } from './notifier/notifier';
 
@@ -9,9 +14,15 @@ type Response = express.Response;
 
 const app = express();
 const { port, root } = get('server');
+const { project } = get<any>('azure');
 const apiUrl = `/${root}/subscription`;
+const apiFactory = new AzureWebApiFactory();
+const ciChecker = new CiStatusChecker();
+const cdChecker = new CdStatusChecker();
+const poller = new AzurePoller(apiFactory, ciChecker, cdChecker);
 const notifier = new Notifier(new HttpClient());
 
+initialize(project);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -46,3 +57,18 @@ export const server = app.listen(port, () => {
 
     console.log(`Data feed server started listening on port ${port}.`);
 });
+
+function initialize(project: string): void {
+
+    const emit = async () => {
+
+        for (const result of await poller.poll(project)) {
+
+            await notifier.notify(result);
+        }
+
+        setTimeout(emit, 5000);
+    };
+
+    emit();
+}
