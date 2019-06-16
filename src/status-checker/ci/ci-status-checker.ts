@@ -57,21 +57,16 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public builtCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        const build = this.getLatestCompletedBuild();
-
-        if (!build || !this.canReport(build) || !this.isPassedOrFailed(build)) {
-
-            return null;
-        }
-
-        const branch = this.getSourceBranch(build).toUpperCase();
-        this._reported.add(this.getKey(build));
-
-        return { event: 'ci', mode: 'built', data: { branch } };
+        return this.notificationCheck('built');
     }
 
     public failedCheck(): IPipelineStatus<{ branch: string }> | null {
 
+        return this.notificationCheck('build-failed');
+    }
+
+    private notificationCheck(expected: string): IPipelineStatus<{ branch: string }> | null {
+
         const build = this.getLatestCompletedBuild();
 
         if (!build || !this.canReport(build) || !this.isPassedOrFailed(build)) {
@@ -79,10 +74,17 @@ export class CiStatusChecker implements ICiStatusChecker {
             return null;
         }
 
+        const mode = this.isFailed(build) ? 'build-failed' : 'built';
+
+        if (mode !== expected) {
+
+            return null;
+        }
+
         const branch = this.getSourceBranch(build).toUpperCase();
         this._reported.add(this.getKey(build));
 
-        return { event: 'ci', mode: 'build-failed', data: { branch } };
+        return { event: 'ci', mode, data: { branch } };
     }
 
     private canReport(build: Build, threshold = 60000): boolean {
