@@ -39,7 +39,18 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public buildingCheck(): IPipelineStatus<{ total: number; time: number }> | null {
 
-        return null;
+        const builds = this.builds.filter(_ => this.isBuilding(_));
+        const total = builds.length;
+
+        if (!total) {
+
+            return null;
+        }
+
+        const earliest = this.sortByStartTime(builds, true)[0];
+        const time = this.elapsedSince(earliest.startTime);
+
+        return { event: 'ci', mode: 'building', data: { total, time } };
     }
 
     public builtCheck(): IPipelineStatus<{ branch: string }> | null {
@@ -50,6 +61,25 @@ export class CiStatusChecker implements ICiStatusChecker {
     public failedCheck(): IPipelineStatus<{ branch: string }> | null {
 
         return null;
+    }
+
+    private elapsedSince(date = new Date()): number {
+
+        return Date.now() - date.getTime();
+    }
+
+    private sortByStartTime(builds: Build[], ascending = false): Build[] {
+
+        const sorted = builds.slice().sort((a, b) => {
+
+            const now = Date.now();
+            const startTimeA = a.startTime ? a.startTime.getTime() : now;
+            const startTimeB = b.startTime ? b.startTime.getTime() : now;
+
+            return startTimeB - startTimeA;
+        });
+
+        return ascending ? sorted.reverse() : sorted;
     }
 
     private isPullRequestValidation(build: Build): boolean {

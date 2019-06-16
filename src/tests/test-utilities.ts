@@ -16,6 +16,13 @@ export class TestUtilities {
 
         return new Date(time);
     }
+
+    public addMinutes(date: Date, minutes: number): Date {
+
+        const time = date.setMinutes(date.getMinutes() + minutes);
+
+        return new Date(time);
+    }
 }
 
 export default new TestUtilities();

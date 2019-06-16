@@ -3,7 +3,7 @@ import { SinonStubbedInstance, stub } from 'sinon';
 
 import Utilities from '../test-utilities';
 
-export function stubAzureBuild(isPullRequest = false, ongoing = false): SinonStubbedInstance<Build> {
+export function stubAzureBuild(ongoing = false, isPullRequest = false): SinonStubbedInstance<Build> {
 
     const [hour, minute] = [12, 15];
     const stubbed = stub({} as Build);
