@@ -36,7 +36,37 @@ export class CiStatusChecker implements ICiStatusChecker {
 
     public brokenCheck(): IPipelineStatus<{ total: number; time: number }> | null {
 
-        return null;
+        let time = 0;
+        const skip = new Set<number>();
+        const failed = new Map<number, Build>();
+        const builds = this.getPassedOrFailedBuilds();
+
+        for (const build of this.sortByCompletionTime(builds)) {
+
+            if (!build.definition || !build.definition.id) {
+
+                continue;
+            }
+
+            const id = build.definition.id;
+
+            if (this.isPassed(build)) {
+
+                skip.add(id);
+            }
+            else if (!skip.has(id)) {
+
+                failed.set(id, build);
+                time = this.elapsedSince(build.finishTime);
+            }
+        }
+
+        if (!failed.size) {
+
+            return null;
+        }
+
+        return { event: 'ci', mode: 'broken', data: { total: failed.size, time } };
     }
 
     public buildingCheck(): IPipelineStatus<{ total: number; time: number }> | null {
@@ -114,6 +144,11 @@ export class CiStatusChecker implements ICiStatusChecker {
     private getCompletedBuilds(): Build[] {
 
         return this.builds.filter(_ => this.isCompleted(_));
+    }
+
+    private getPassedOrFailedBuilds(): Build[] {
+
+        return this.builds.filter(_ => this.isPassedOrFailed(_));
     }
 
     private getSourceBranch(build: Build): string {

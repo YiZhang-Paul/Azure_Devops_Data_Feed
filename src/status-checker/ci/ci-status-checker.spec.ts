@@ -52,6 +52,60 @@ context('ci status checker unit test', () => {
         });
     });
 
+    describe('brokenCheck()', () => {
+
+        beforeEach('brokenCheck() test setup', () => {
+            // builds 1 - 5 belong to pipeline A
+            checker.builds.slice(0, 5).forEach(_ => _.definition = { id: 5 });
+            // builds 6 - 10 belong to pipeline B
+            checker.builds.slice(5, 10).forEach(_ => _.definition = { id: 6 });
+            // builds 11 - 15 belong to pipeline C
+            checker.builds.slice(10, 15).forEach(_ => _.definition = { id: 7 });
+            // builds 16 - 20 belong to pipeline D
+            checker.builds.slice(15).forEach(_ => _.definition = { id: 8 });
+        });
+
+        it('should return null when no pipeline is broken', () => {
+            // all pipelines are still considered passing since their most recent completed builds are all passed
+            checker.builds[1].result = BuildResult.Failed;
+            checker.builds[6].result = BuildResult.Failed;
+            checker.builds[11].result = BuildResult.Failed;
+
+            expect(checker.brokenCheck()).to.be.null;
+        });
+
+        it('should return total number of broken pipelines and elapsed time since first pipeline broke', () => {
+            // pipeline A and C are broken since their most recent completed build is broken
+            const minutes = -17;
+            checker.builds[0].result = BuildResult.Failed;
+            checker.builds[0].finishTime = Utilities.addMinutes(new Date(), minutes + 2);
+            checker.builds[1].result = BuildResult.Failed;
+            // build 2 was the first one to break
+            checker.builds[1].finishTime = Utilities.addMinutes(new Date(), minutes);
+            checker.builds[10].result = BuildResult.PartiallySucceeded;
+            checker.builds[10].finishTime = Utilities.addMinutes(new Date(), minutes + 1);
+            const elapsedTime = Math.abs(minutes) * 60000;
+            const result = checker.brokenCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('ci');
+            expect(result.mode).to.equal('broken');
+            expect(result.data.total).to.equal(2);
+            expect(Math.abs(result.data.time - elapsedTime)).to.be.lessThan(50);
+        });
+
+        it('should ignore builds that are neither passed nor failed', () => {
+            // pipeline B is broken since its most recent passed/failed build is broken
+            checker.builds[5].result = BuildResult.Canceled;
+            checker.builds[6].result = BuildResult.None;
+            checker.builds[7].result = BuildResult.Failed;
+            const result = checker.brokenCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.data.total).to.equal(1);
+        });
+    });
+
     describe('buildingCheck()', () => {
 
         it('should return null when no ongoing builds found', () => {
