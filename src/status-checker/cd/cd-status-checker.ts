@@ -52,7 +52,16 @@ export class CdStatusChecker implements ICdStatusChecker {
 
     public pendingCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        const deploy = this.deploys.find(_ => this.isPending(_));
+
+        if (!deploy) {
+
+            return null;
+        }
+
+        const branch = this.getReleaseName(deploy);
+
+        return { event: 'cd', mode: 'pending', data: { branch } };
     }
 
     public deployFailureCheck(): IPipelineStatus<{ branch: string }> | null {
