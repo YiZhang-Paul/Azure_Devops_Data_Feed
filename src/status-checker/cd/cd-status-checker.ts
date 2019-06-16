@@ -53,15 +53,15 @@ export class CdStatusChecker implements ICdStatusChecker {
 
     public pendingStartCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        return this.notificationCheck('pending');
     }
 
     public deploySuccessCheck(): IPipelineStatus<{ branch: string }> | null {
 
-        return null;
+        return this.notificationCheck('deployed');
     }
 
-    private notificationCheck(expected: string): any | null {
+    private notificationCheck(expected: string): IPipelineStatus<{ branch: string }> | null {
 
         const deploy = this.getLatestCompletedDeploy();
 
@@ -82,7 +82,7 @@ export class CdStatusChecker implements ICdStatusChecker {
         const branch = deploy.releaseDefinition ? deploy.releaseDefinition.name : '';
         this._reported.add(this.getKey(deploy));
 
-        return { event: 'cd', mode, data: { branch } };
+        return { event: 'cd', mode, data: { branch: branch || '' } };
     }
 
     private canReport(deploy: Deployment, threshold = 300000): boolean {

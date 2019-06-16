@@ -10,9 +10,9 @@ export function stubAzureDeploy(ongoing = false, pending = false): SinonStubbedI
         throw new Error('A deployment cannot have both ongoing and pending status.');
     }
 
-    const [hour, minute] = [12, 15];
+    const [hour, minute] = [0, 5];
     const stubbed = stub({} as Deployment);
-    stubbed.deploymentStatus = ongoing ? DeploymentStatus.InProgress : DeploymentStatus.Succeeded;
+    stubbed.deploymentStatus = ongoing ? DeploymentStatus.InProgress : DeploymentStatus.Undefined;
     stubbed.startedOn = Utilities.getDate(hour);
 
     if (!ongoing && !pending) {

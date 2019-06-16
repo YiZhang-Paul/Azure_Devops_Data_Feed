@@ -50,7 +50,7 @@ context('cd status checker unit test', () => {
 
             const deploy = checker.deploys[0];
             deploy.deploymentStatus = DeploymentStatus.Failed;
-            deploy.completedOn = Utilities.addMilliseconds(new Date(), -300005);
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -300500);
             const result = checker.deployFailureCheck();
 
             expect(result).to.be.null;
@@ -62,7 +62,7 @@ context('cd status checker unit test', () => {
             const deploy = checker.deploys[0];
             deploy.releaseDefinition = { name };
             deploy.deploymentStatus = DeploymentStatus.Failed;
-            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299995);
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
             const result = checker.deployFailureCheck() as IPipelineStatus;
 
             expect(result).to.be.not.null;
@@ -75,13 +75,94 @@ context('cd status checker unit test', () => {
 
             const deploy = checker.deploys[0];
             deploy.deploymentStatus = DeploymentStatus.Failed;
-            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299995);
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
 
             expect(checker.deployFailureCheck()).to.be.not.null;
 
             for (let i = 0; i < 10; ++i) {
 
                 expect(checker.deployFailureCheck()).to.be.null;
+            }
+        });
+    });
+
+    describe('pendingStartCheck()', () => {
+
+        it('should return null when no deployment became pending within last 5 minutes', () => {
+
+            checker.deploys[0] = stubAzureDeploy(false, true);
+            const deploy = checker.deploys[0];
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -300500);
+            const result = checker.pendingStartCheck();
+
+            expect(result).to.be.null;
+        });
+
+        it('should send notification for deployment became pending within last 5 minutes', () => {
+
+            checker.deploys[0] = stubAzureDeploy(false, true);
+            const name = 'PROD';
+            const deploy = checker.deploys[0];
+            deploy.releaseDefinition = { name };
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
+            const result = checker.pendingStartCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('cd');
+            expect(result.mode).to.equal('pending');
+            expect(result.data.branch).to.equal(name);
+        });
+
+        it('should only send one notification for every pending deployment', () => {
+
+            checker.deploys[0] = stubAzureDeploy(false, true);
+            const deploy = checker.deploys[0];
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
+
+            expect(checker.pendingStartCheck()).to.be.not.null;
+
+            for (let i = 0; i < 10; ++i) {
+
+                expect(checker.pendingStartCheck()).to.be.null;
+            }
+        });
+    });
+
+    describe('deploySuccessCheck()', () => {
+
+        it('should return null when no deployment succeeded within last 5 minutes', () => {
+
+            const deploy = checker.deploys[0];
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -300500);
+            const result = checker.deploySuccessCheck();
+
+            expect(result).to.be.null;
+        });
+
+        it('should send notification for deployment succeeded within last 5 minutes', () => {
+
+            const name = 'PROD';
+            const deploy = checker.deploys[0];
+            deploy.releaseDefinition = { name };
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
+            const result = checker.deploySuccessCheck() as IPipelineStatus;
+
+            expect(result).to.be.not.null;
+            expect(result.event).to.equal('cd');
+            expect(result.mode).to.equal('deployed');
+            expect(result.data.branch).to.equal(name);
+        });
+
+        it('should only send one notification for every successful deployment', () => {
+
+            const deploy = checker.deploys[0];
+            deploy.completedOn = Utilities.addMilliseconds(new Date(), -299500);
+
+            expect(checker.deploySuccessCheck()).to.be.not.null;
+
+            for (let i = 0; i < 10; ++i) {
+
+                expect(checker.deploySuccessCheck()).to.be.null;
             }
         });
     });

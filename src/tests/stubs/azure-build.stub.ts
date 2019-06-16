@@ -5,7 +5,7 @@ import Utilities from '../test-utilities';
 
 export function stubAzureBuild(ongoing = false, isPullRequest = false): SinonStubbedInstance<Build> {
 
-    const [hour, minute] = [12, 15];
+    const [hour, minute] = [0, 5];
     const stubbed = stub({} as Build);
     stubbed.status = ongoing ? BuildStatus.InProgress : BuildStatus.Completed;
     stubbed.sourceBranch = isPullRequest ? 'refs/pull/1200' : 'refs/heads/develop';
