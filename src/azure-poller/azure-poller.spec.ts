@@ -7,6 +7,8 @@ import { stubAzureDeploy } from '../tests/stubs/azure-deploy.stub';
 import { stubAzureWebApiFactory } from '../tests/stubs/azure-web-api-factory.stub';
 import { stubCiStatusChecker } from '../tests/stubs/ci-status-checker.stub';
 import { stubCdStatusChecker } from '../tests/stubs/cd-status-checker.stub';
+import { IBuildSummary } from '../status-checker/build-summary.interface';
+import { IDeploySummary } from '../status-checker/deploy-summary.interface';
 import { ICiStatusChecker } from '../status-checker/ci/ci-status-checker.interface';
 import { ICdStatusChecker } from '../status-checker/cd/cd-status-checker.interface';
 import { IPipelineStatus } from '../status-checker/pipeline-status.interface';
@@ -115,11 +117,49 @@ context('azure poller unit test', () => {
 
         it('should ignore null status checks', async () => {
 
-            const status = { event: 'cd', mode: 'deploying' } as IPipelineStatus;
-            cdCheckerStub.deploySuccessCheck.returns(status);
+            const status = { event: 'ci', mode: 'building' } as IPipelineStatus;
+            ciCheckerStub.buildingCheck.returns(status);
             const result = await poller.poll(project);
 
             expect(result).to.deep.equal([status]);
+        });
+
+        it('should always return passing status when all other checks return null', async () => {
+
+            const pull: IBuildSummary = {
+
+                fail: Utilities.fillArray(2, stubAzureBuild),
+                pass: Utilities.fillArray(5, stubAzureBuild),
+                ongoing: Utilities.fillArray(1, stubAzureBuild),
+                other: Utilities.fillArray(2, stubAzureBuild)
+            };
+
+            const merge: IBuildSummary = {
+
+                fail: Utilities.fillArray(1, stubAzureBuild),
+                pass: Utilities.fillArray(3, stubAzureBuild),
+                ongoing: Utilities.fillArray(0, stubAzureBuild),
+                other: Utilities.fillArray(1, stubAzureBuild)
+            };
+
+            const deploy: IDeploySummary = {
+
+                fail: Utilities.fillArray(0, stubAzureDeploy),
+                pass: Utilities.fillArray(4, stubAzureDeploy),
+                ongoing: Utilities.fillArray(0, stubAzureDeploy),
+                other: Utilities.fillArray(1, stubAzureDeploy)
+            };
+
+            stub(ciCheckerStub, 'summary').get(() => ({ pull, merge }));
+            stub(cdCheckerStub, 'summary').get(() => ({ deploy }));
+            const result = await poller.poll(project);
+
+            expect(result.length).to.equal(1);
+            expect(result[0].event).to.equal('ci');
+            expect(result[0].mode).to.equal('passing');
+            expect(result[0].data.pull).to.deep.equal([2, 5, 10]);
+            expect(result[0].data.merge).to.deep.equal([1, 3, 5]);
+            expect(result[0].data.deploy).to.deep.equal([0, 4, 5]);
         });
     });
 });

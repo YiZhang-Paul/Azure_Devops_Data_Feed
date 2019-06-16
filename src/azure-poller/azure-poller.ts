@@ -5,6 +5,8 @@ import { Deployment } from 'azure-devops-node-api/interfaces/ReleaseInterfaces';
 import Logger from '../logger';
 import { ICiStatusChecker } from '../status-checker/ci/ci-status-checker.interface';
 import { ICdStatusChecker } from '../status-checker/cd/cd-status-checker.interface';
+import { IPipelineStatus } from '../status-checker/pipeline-status.interface';
+import { IPipelineSummary } from '../status-checker/pipeline-summary.interface';
 
 import { IAzureWebApiFactory } from './azure-web-api-factory.interface';
 
@@ -18,7 +20,8 @@ export class AzurePoller {
         this._ciChecker.brokenCheck.bind(this._ciChecker),
         this._cdChecker.deployingCheck.bind(this._cdChecker),
         this._cdChecker.pendingCheck.bind(this._cdChecker),
-        this._ciChecker.buildingCheck.bind(this._ciChecker)
+        this._ciChecker.buildingCheck.bind(this._ciChecker),
+        this.passingCheck.bind(this)
     ];
 
     private _notificationChecks: Function[] = [
@@ -46,7 +49,7 @@ export class AzurePoller {
         return today;
     }
 
-    public async poll(project: string): Promise<any[]> {
+    public async poll(project: string): Promise<IPipelineStatus[]> {
 
         try {
 
@@ -55,7 +58,7 @@ export class AzurePoller {
             const status = this.check(this._statusChecks);
             const notification = this.check(this._notificationChecks);
 
-            return [status, notification].filter(_ => !!_);
+            return [status, notification].filter(_ => !!_) as IPipelineStatus[];
         }
         catch (error) {
 
@@ -85,7 +88,7 @@ export class AzurePoller {
             .filter(_ => !_.startedOn || _.startedOn >= this._beginningOfDay);
     }
 
-    private check(checkers: Function[]): any | null {
+    private check(checkers: Function[]): IPipelineStatus | null {
 
         for (const checker of checkers) {
 
@@ -98,5 +101,24 @@ export class AzurePoller {
         }
 
         return null;
+    }
+
+    private passingCheck(): IPipelineStatus | null {
+
+        const buildStats = this._ciChecker.summary;
+        const deployStats = this._cdChecker.summary;
+        const pull = this.getCounts(buildStats.pull);
+        const merge = this.getCounts(buildStats.merge);
+        const deploy = this.getCounts(deployStats.deploy);
+
+        return { event: 'ci', mode: 'passing', data: { pull, merge, deploy } };
+    }
+
+    private getCounts(summary: IPipelineSummary<any>): number[] {
+
+        const { fail, pass, ongoing, other } = summary;
+        const total = fail.length + pass.length + ongoing.length + other.length;
+
+        return [fail.length, pass.length, total];
     }
 }
