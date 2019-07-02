@@ -7,6 +7,7 @@ import { ISubscriberInfo } from './subscriber-info.interface';
 
 export class Notifier {
 
+    private _callbackUrls = new Set<string>();
     private _subscribers = new Map<string, ISubscriberInfo>();
 
     constructor(private _http: IHttpClient) { }
@@ -18,7 +19,13 @@ export class Notifier {
 
     public subscribe(info: ISubscriberInfo): string {
 
+        if (this._callbackUrls.has(info.callbackUrl)) {
+
+            throw new Error(`Url "${info.callbackUrl}" is already registered.`);
+        }
+
         const id = Guid.create().toString();
+        this._callbackUrls.add(info.callbackUrl);
         this._subscribers.set(id, info);
 
         return id;

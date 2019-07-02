@@ -33,7 +33,16 @@ app.post(apiUrl, (req: Request, res: Response) => {
         return res.sendStatus(400);
     }
 
-    res.status(201).json(notifier.subscribe(req.body));
+    try {
+
+        return res.status(201).json(notifier.subscribe(req.body));
+    }
+    catch (error) {
+
+        console.log(error);
+
+        return res.status(400).json(error);
+    }
 });
 
 app.delete(apiUrl, (req: Request, res: Response) => {
