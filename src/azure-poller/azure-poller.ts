@@ -10,7 +10,7 @@ import { IPipelineSummary } from '../status-checker/pipeline-summary.interface';
 
 import { IAzureWebApiFactory } from './azure-web-api-factory.interface';
 
-const { include_definitions: definitions } = config.get<any>('azure');
+const { include } = config.get<any>('azure');
 
 export class AzurePoller {
 
@@ -71,7 +71,7 @@ export class AzurePoller {
     private async getBuildsForToday(project: string): Promise<Build[]> {
 
         const api = await this._apiFactory.createBuildApi();
-        const builds = await api.getBuilds(project, definitions);
+        const builds = await api.getBuilds(project, include);
 
         return builds
             .slice(0, 120)
