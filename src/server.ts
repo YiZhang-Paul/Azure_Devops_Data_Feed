@@ -72,7 +72,7 @@ function initialize(project: string): void {
     const emit = async () => {
 
         for (const result of await poller.poll(project)) {
-
+            console.log(result);
             await notifier.notify(result);
         }
 

@@ -8,7 +8,6 @@ import { server } from '../../../server';
 const { expect } = chai;
 const rootUrl = `/${get<any>('server').root}`;
 const subscribeUrl = `${rootUrl}/subscription`;
-const callbackUrl = 'example.com';
 chai.use(require('chai-http'));
 
 context('api test', () => {
@@ -68,6 +67,7 @@ context('api test', () => {
 
         it('should return 201 and guid when successfully subscribed', async () => {
 
+            const callbackUrl = 'example1.com';
             const response = await agent.post(subscribeUrl).send({ callbackUrl });
 
             expect(Utilities.isValidGuid(response.body)).to.be.true;
@@ -85,6 +85,7 @@ context('api test', () => {
         it('should return 400 no subscription found with given guid', async () => {
 
             const url = subscribeUrl;
+            const callbackUrl = 'example2.com';
             const id = (await agent.post(url).send({ callbackUrl })).body;
             const newId = `${id.slice(0, -1)}${id[id.length - 1] === 'a' ? 'b' : 'a'}`;
             const response = await agent.delete(url).send({ id: newId });
@@ -98,6 +99,7 @@ context('api test', () => {
         it('should return 200 and true when unsubscribed successfully', async () => {
 
             const url = subscribeUrl;
+            const callbackUrl = 'example3.com';
             const id = (await agent.post(url).send({ callbackUrl })).body;
             const response = await agent.delete(url).send({ id });
 
