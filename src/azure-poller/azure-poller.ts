@@ -16,11 +16,11 @@ export class AzurePoller {
 
     private _statusChecks: Function[] = [
 
+        this._cdChecker.deployingCheck.bind(this._cdChecker),
+        this._ciChecker.buildingCheck.bind(this._ciChecker),
         this._cdChecker.deployBrokenCheck.bind(this._cdChecker),
         this._ciChecker.brokenCheck.bind(this._ciChecker),
-        this._cdChecker.deployingCheck.bind(this._cdChecker),
         this._cdChecker.pendingCheck.bind(this._cdChecker),
-        this._ciChecker.buildingCheck.bind(this._ciChecker),
         this.passingCheck.bind(this)
     ];
 
