@@ -55,10 +55,10 @@ export class AzurePoller {
 
             this._ciChecker.builds = await this.getBuildsForToday(project);
             this._cdChecker.deploys = await this.getDeploysForToday(project);
-            const status = this.check(this._statusChecks);
             const notification = this.check(this._notificationChecks);
+            const status = this.check(this._statusChecks);
 
-            return [status, notification].filter(_ => !!_) as IPipelineStatus[];
+            return [notification, status].filter(_ => !!_) as IPipelineStatus[];
         }
         catch (error) {
 

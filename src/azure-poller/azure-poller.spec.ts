@@ -102,17 +102,17 @@ context('azure poller unit test', () => {
 
         it('should return highest priority status checks found', async () => {
 
-            const buildingStatus = { event: 'ci', mode: 'building' } as IPipelineStatus;
-            const pendingStatus = { event: 'cd', mode: 'pending' } as IPipelineStatus;
             const failedStatus = { event: 'ci', mode: 'build-failed' } as IPipelineStatus;
             const builtStatus = { event: 'ci', mode: 'built' } as IPipelineStatus;
-            ciCheckerStub.buildingCheck.returns(buildingStatus);
-            cdCheckerStub.pendingCheck.returns(pendingStatus);
+            const buildingStatus = { event: 'ci', mode: 'building' } as IPipelineStatus;
+            const pendingStatus = { event: 'cd', mode: 'pending' } as IPipelineStatus;
             ciCheckerStub.failedCheck.returns(failedStatus);
             ciCheckerStub.builtCheck.returns(builtStatus);
+            ciCheckerStub.buildingCheck.returns(buildingStatus);
+            cdCheckerStub.pendingCheck.returns(pendingStatus);
             const result = await poller.poll(project);
-            // building has higher priority than pending, failed has higher priority than built
-            expect(result).to.deep.equal([buildingStatus, failedStatus]);
+            // failed has higher priority than built, building has higher priority than pending
+            expect(result).to.deep.equal([failedStatus, buildingStatus]);
         });
 
         it('should ignore null status checks', async () => {
